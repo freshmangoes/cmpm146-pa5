@@ -6,13 +6,16 @@ Recipe = namedtuple('Recipe', ['name', 'check', 'effect', 'cost'])
 
 
 class State(OrderedDict):
-    """ This class is a thin wrapper around an OrderedDict, which is simply a dictionary which keeps the order in
-        which elements are added (for consistent key-value pair comparisons). Here, we have provided functionality
-        for hashing, should you need to use a state as a key in another dictionary, e.g. distance[state] = 5. By
-        default, dictionaries are not hashable. Additionally, when the state is converted to a string, it removes
-        all items with quantity 0.
+    """ This class is a thin wrapper around an OrderedDict, which is simply a
+        dictionary which keeps the order in which elements are added (for
+        consistent key-value pair comparisons). Here, we have provided
+        functionality for hashing, should you need to use a state as a
+        key in another dictionary, e.g. distance[state] = 5. By default,
+        dictionaries are not hashable. Additionally, when the state is
+        converted to a string, it removes all items with quantity 0.
 
-        Use of this state representation is optional, should you prefer another.
+        Use of this state representation is optional, should you prefer
+        another.
     """
 
     def __key(self):
@@ -34,8 +37,10 @@ class State(OrderedDict):
 
 
 def make_checker(rule):
-    # Returns a function to determine whether a state meets a rule's requirements.
-    # This code runs once, when the rules are constructed before the search is attempted.
+    # Returns a function to determine whether a state meets a
+    # rule's requirements.
+    # This code runs once, when the rules are constructed before the search
+    # is attempted.
 
     def check(state):
         # This code is called by graph(state) and runs millions of times.
@@ -46,8 +51,10 @@ def make_checker(rule):
 
 
 def make_effector(rule):
-    # Returns a function which transitions from state to new_state given the rule.
-    # This code runs once, when the rules are constructed before the search is attempted.
+    # Returns a function which transitions from state to new_state
+    # given the rule.
+    # This code runs once, when the rules are constructed before the
+    # search is attempted.
 
     def effect(state):
         # This code is called by graph(state) and runs millions of times
@@ -63,16 +70,18 @@ def make_goal_checker(goal):
     # This code runs once, before the search is attempted.
 
     def is_goal(state):
-        # This code is used in the search process and may be called millions of times.
+        # This code is used in the search process and may be called
+        # millions of times.
         return False
 
     return is_goal
 
 
 def graph(state):
-    # Iterates through all recipes/rules, checking which are valid in the given state.
-    # If a rule is valid, it returns the rule's name, the resulting state after application
-    # to the given state, and the cost for the rule.
+    # Iterates through all recipes/rules, checking which are valid in the
+    # given state.
+    # If a rule is valid, it returns the rule's name, the resulting state
+    # after application to the given state, and the cost for the rule.
     for r in all_recipes:
         if r.check(state):
             yield (r.name, r.effect(state), r.cost)
@@ -99,16 +108,17 @@ if __name__ == '__main__':
         Crafting = json.load(f)
 
     # List of items that can be in your inventory:
-    print('All items:',Crafting['Items'])
+    print('All items:', Crafting['Items'])
 
     # List of items in your initial inventory with amounts:
-    print('Initial inventory:',Crafting['Initial'])
+    print('Initial inventory:', Crafting['Initial'])
 
     # List of items needed to be in your inventory at the end of the plan:
-    print('Goal:',Crafting['Goal'])
+    print('Goal:', Crafting['Goal'])
 
     # Dict of crafting recipes (each is a dict):
-    print('Example recipe:','craft stone_pickaxe at bench ->',Crafting['Recipes']['craft stone_pickaxe at bench'])
+    print('Example recipe:', 'craft stone_pickaxe at bench ->',
+          Crafting['Recipes']['craft stone_pickaxe at bench'])
 
     # Build rules
     all_recipes = []
