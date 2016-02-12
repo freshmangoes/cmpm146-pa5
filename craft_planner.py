@@ -56,6 +56,10 @@ def make_effector(rule):
     # This code runs once, when the rules are constructed before the
     # search is attempted.
 
+    produce = rule.get('Produces')
+    consume = rule.get('Consumes')
+    print("Produces:: " + str(produce))
+    print("Consumes:: " + str(consume))
     def effect(state):
         # This code is called by graph(state) and runs millions of times
         # Tip: Do something with rule['Produces'] and rule['Consumes'].
@@ -123,6 +127,7 @@ if __name__ == '__main__':
     # Build rules
     all_recipes = []
     for name, rule in Crafting['Recipes'].items():
+        print("Name:: " + str(name))
         checker = make_checker(rule)
         effector = make_effector(rule)
         recipe = Recipe(name, checker, effector, rule['Time'])
