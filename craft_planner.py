@@ -42,6 +42,20 @@ def make_checker(rule):
     # This code runs once, when the rules are constructed before the search
     # is attempted.
 
+    consume = []
+    reqs = []
+
+    for item_name in Crafting['Items']:
+        if 'Consumes' in rule:
+            if item_name in rule['Consumes']:
+                consume.append((item_name, rule['Consumes'][item_name]))
+        if 'Requires' in rule:
+            if item_name in rule['Requires']:
+                reqs.append((item_name, rule['Requires'][item_name]))
+    print("In make_checker")
+    print("Consumes:: " + str(consume))
+    print("Requires:: " + str(reqs))
+
     def check(state):
         # This code is called by graph(state) and runs millions of times.
         # Tip: Do something with rule['Consumes'] and rule['Requires'].
@@ -56,10 +70,23 @@ def make_effector(rule):
     # This code runs once, when the rules are constructed before the
     # search is attempted.
 
-    produce = rule.get('Produces')
-    consume = rule.get('Consumes')
-    print("Produces:: " + str(produce))
+    consume = []
+    produce = []
+    for item_name in Crafting['Items']:
+        if 'Consumes' in rule:
+            if item_name in rule['Consumes']:
+                consume.append((item_name, rule['Consumes'][item_name]))
+        if 'Produces' in rule:
+            if item_name in rule['Produces']:
+                produce.append((item_name, rule['Produces'][item_name]))
+    print("In make_effector")
     print("Consumes:: " + str(consume))
+    if len(consume) > 0:
+        print(consume[0][1])
+        if len(consume) > 1:
+            print(consume[1][1])
+    print("Produces:: " + str(produce))
+
     def effect(state):
         # This code is called by graph(state) and runs millions of times
         # Tip: Do something with rule['Produces'] and rule['Consumes'].
