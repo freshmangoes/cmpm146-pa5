@@ -43,7 +43,7 @@ def make_checker(rule):
     # is attempted.
 
     consume = []
-    reqs = []
+    required = []
 
     for item_name in Crafting['Items']:
         if 'Consumes' in rule:
@@ -51,16 +51,24 @@ def make_checker(rule):
                 consume.append((item_name, rule['Consumes'][item_name]))
         if 'Requires' in rule:
             if item_name in rule['Requires']:
-                reqs.append((item_name, rule['Requires'][item_name]))
-    print("In make_checker")
-    print("Consumes:: " + str(consume))
-    print("Requires:: " + str(reqs))
+                required.append((item_name, rule['Requires'][item_name]))
+
+    # print("In make_checker")
+    # print("Consumes:: " + str(consume))
+    # print("Requires:: " + str(requires))
 
     def check(state):
         # This code is called by graph(state) and runs millions of times.
         # Tip: Do something with rule['Consumes'] and rule['Requires'].
+        temp_state = state.copy()
+        inventory = temp_state.items()
+        for item in required:
+            if not inventory[item[0]]:
+                return False
+        for item in consume:
+            if inventory[item[0]] < item[0]:
+                return False
         return True
-
     return check
 
 
@@ -79,18 +87,27 @@ def make_effector(rule):
         if 'Produces' in rule:
             if item_name in rule['Produces']:
                 produce.append((item_name, rule['Produces'][item_name]))
-    print("In make_effector")
-    print("Consumes:: " + str(consume))
-    if len(consume) > 0:
-        print(consume[0][1])
-        if len(consume) > 1:
-            print(consume[1][1])
-    print("Produces:: " + str(produce))
+    # print("In make_effector")
+    # print("Consumes:: " + str(consume))
+    # if len(consume) > 0:
+    #     print(consume[0][1])
+    #     if len(consume) > 1:
+    #         print(consume[1][1])
+    # print("Produces:: " + str(produce))
 
     def effect(state):
         # This code is called by graph(state) and runs millions of times
         # Tip: Do something with rule['Produces'] and rule['Consumes'].
-        next_state = None
+        temp_state = state.copy()
+        inventory = temp_state.items()
+        for consumed_items in consume:
+            inventory[consumed_items[0]] -= consumed_items[1]
+        for produced_items in produce:
+            inventory[produced_items[0]] += produced_items[1]
+        print(temp_state.__str__())
+        temp_state.update(inventory)
+        print(temp_state.__str__())
+        next_state = temp_state
         return next_state
 
     return effect
@@ -154,7 +171,7 @@ if __name__ == '__main__':
     # Build rules
     all_recipes = []
     for name, rule in Crafting['Recipes'].items():
-        print("Name:: " + str(name))
+        # print("Name:: " + str(name))
         checker = make_checker(rule)
         effector = make_effector(rule)
         recipe = Recipe(name, checker, effector, rule['Time'])
