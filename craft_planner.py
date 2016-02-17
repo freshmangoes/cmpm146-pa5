@@ -1,3 +1,7 @@
+# Devon Long
+# Kyle Cilia
+
+
 import json
 from collections import namedtuple, defaultdict, OrderedDict
 from timeit import default_timer as time
@@ -173,7 +177,7 @@ def make_heuristic(goal):
         cost["plank"] = 1 + ceil(cost["wood"]/4)
         cost["stick"] = 1 + ceil(cost["plank"]/2)
 
-        tool_base = 100
+        tool_base = 5000
 
         cost["bench"] = tool_base + cost["plank"]*(4 - inventory["plank"])
         cost["furnace"] =  tool_base + cost["bench"]*(1 - inventory["bench"]) + cost["cobble"]*(8 - inventory["cobble"])
@@ -185,17 +189,15 @@ def make_heuristic(goal):
         cost["iron_axe"] = tool_base + cost["bench"]*(1 - inventory["bench"]) + cost["ingot"]*(3 - inventory["ingot"]) + cost["stick"]*(2 - inventory["stick"])
         cost["iron_pickaxe"] = cost["iron_axe"]
 
-        cost["cart"] = 1 + cost["bench"]*(1 - inventory["bench"]) + cost["ingot"]*(5 - inventory["ingot"])
-        # cost["rail"] = 1 + cost["bench"]*(1 - inventory["bench"]) + ceil(6*(cost["ingot"]*(5 - inventory["ingot"]))/16 + (cost["stick"]*(1 - inventory["stick"]))/16)
-        # cost["rail"] = 1 + cost["bench"]*(1 - inventory["bench"]) + ceil(6*(cost["ingot"]*(5 - inventory["ingot"])) + (cost["stick"]*(1 - inventory["stick"])))
-        cost["rail"] = 1 + cost["bench"]*(1 - inventory["bench"]) + cost["ingot"]*(6 - inventory["ingot"])
+        cost["cart"] = 1000 + cost["bench"]*(1 - inventory["bench"]) + cost["ingot"]*(5 - inventory["ingot"])
+        cost["rail"] = 1000 + cost["bench"]*(1 - inventory["bench"]) + cost["ingot"]*(6 - inventory["ingot"])
 
 
         tools = ["wooden_axe", "wooden_pickaxe", "stone_axe", "stone_pickaxe", "bench", "furnace"]
 
         for key in inventory:
             if key in goal:
-                if inventory[key] < goal[key]:
+                if inventory[key] <= goal[key]:
                     if key in cost:
                         hue_val += cost[key] * (goal[key] - inventory[key])
                     else:
@@ -221,8 +223,8 @@ def search(state, is_goal, limit, get_hue, all_recipes):
     start_time = time()
     temp_state = state.copy()
 
+    visited = set()
     prio_q = []
-    # visited = set()
     distance = {}
     prev = {}
 
@@ -243,12 +245,12 @@ def search(state, is_goal, limit, get_hue, all_recipes):
                     node = prev[node[1]]
                 path.append([node[3], node[2], node[1]])
                 path.reverse()
+                print("Visited nodes: " + str(len(visited)))
                 return path
             neighbors = graph(node[1], all_recipes)
             # n[0] - name
             # n[1] - state
             # n[2] - cost
-            print(node)
             for n in neighbors:
                 distance_through_node = node[0] - get_hue(node[1]) + n[2]
                 if n[1] not in distance or distance_through_node < distance[n[1]]:
@@ -256,7 +258,7 @@ def search(state, is_goal, limit, get_hue, all_recipes):
                     prev[n[1]] = node
                     new_node = (get_hue(n[1]) + distance[n[1]], n[1], n[0], n[2])
                     heappush(prio_q, new_node)
-
+            visited.add(node)
     # Failed to find a path
     print("Failed to find a path from", state, 'within time limit.')
     return []
@@ -281,7 +283,6 @@ if __name__ == '__main__':
     # Build rules
     all_recipes = []
     for name, rule in Crafting['Recipes'].items():
-        # print("Name:: " + str(name))
         checker = make_checker(rule)
         effector = make_effector(rule)
         recipe = Recipe(name, checker, effector, rule['Time'])
@@ -289,8 +290,7 @@ if __name__ == '__main__':
 
     # Create a function which checks for the goal
     goal = Crafting['Goal']
-    # goal = {"cart": 1}
-    # goal = {"iron_axe": 1}
+
     is_goal = make_goal_checker(goal)
     get_hue = make_heuristic(goal)
     # Initialize first state from initial inventory
