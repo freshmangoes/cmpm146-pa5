@@ -55,6 +55,7 @@ def make_checker(rule):
             if item_name in rule['Requires']:
                 reqs[item_name] = rule['Requires'][item_name]
 
+
     def check(state):
         # This code is called by graph(state) and runs millions of times.
         # Tip: Do something with rule['Consumes'] and rule['Requires'].
@@ -146,35 +147,51 @@ def make_heuristic(goal):
 
         cost = {}
         if inventory["stone_axe"] >= 1:
-            cost["wood"] = 1
-        elif inventory["wooden_axe"] >= 1:
             cost["wood"] = 2
-        else:
+        elif inventory["wooden_axe"] >= 1:
             cost["wood"] = 4
+        else:
+            cost["wood"] = 8
 
         if inventory["iron_pickaxe"] >= 1:
-            cost["cobble"] = 1
-            cost["coal"] = 1
-            cost["ore"] = 2
+            cost["cobble"] = 2
+            cost["coal"] = 2
+            cost["ore"] = 4
         elif inventory["stone_pickaxe"] >= 1:
-            cost["cobble"] = 1
-            cost["coal"] = 1
-            cost["ore"] = 2
-        elif inventory["wooden_pickaxe"] >= 1:
             cost["cobble"] = 4
             cost["coal"] = 4
             cost["ore"] = 8
-        else:
+        elif inventory["wooden_pickaxe"] >= 1:
             cost["cobble"] = 8
             cost["coal"] = 8
             cost["ore"] = 16
+        else:
+            cost["cobble"] = 16
+            cost["coal"] = 16
+            cost["ore"] = 32
 
-        cost["ingot"] = 0
+        cost["plank"] = 1 + ceil(cost["wood"]/4)
+        cost["stick"] = 1 + ceil(cost["plank"]/2)
 
-        tools = ["wooden_axe", "wooden_pickaxe", "stone_axe", "stone_pickaxe", "bench", "furnace", "iron_pickaxe", "iron_axe"]
+        tool_base = 100
 
-        # for key in tools:
-        #     cost[key] = 5000
+        cost["bench"] = tool_base + cost["plank"]*(4 - inventory["plank"])
+        cost["furnace"] =  tool_base + cost["bench"]*(1 - inventory["bench"]) + cost["cobble"]*(8 - inventory["cobble"])
+        cost["ingot"] = 5 + cost["coal"] + cost["ore"] + cost["furnace"]*(1 - inventory["furnace"])
+        cost["wooden_axe"] = tool_base + cost["bench"]*(1 - inventory["bench"]) + cost["plank"]*(3 - inventory["plank"]) + cost["stick"]*(2 - inventory["stick"])
+        cost["wooden_pickaxe"] = cost["wooden_axe"]
+        cost["stone_axe"] = tool_base + cost["bench"]*(1 - inventory["bench"]) + cost["cobble"]*(3 - inventory["cobble"]) + cost["stick"]*(2 - inventory["stick"])
+        cost["stone_pickaxe"] = cost["stone_axe"]
+        cost["iron_axe"] = tool_base + cost["bench"]*(1 - inventory["bench"]) + cost["ingot"]*(3 - inventory["ingot"]) + cost["stick"]*(2 - inventory["stick"])
+        cost["iron_pickaxe"] = cost["iron_axe"]
+
+        cost["cart"] = 1 + cost["bench"]*(1 - inventory["bench"]) + cost["ingot"]*(5 - inventory["ingot"])
+        # cost["rail"] = 1 + cost["bench"]*(1 - inventory["bench"]) + ceil(6*(cost["ingot"]*(5 - inventory["ingot"]))/16 + (cost["stick"]*(1 - inventory["stick"]))/16)
+        # cost["rail"] = 1 + cost["bench"]*(1 - inventory["bench"]) + ceil(6*(cost["ingot"]*(5 - inventory["ingot"])) + (cost["stick"]*(1 - inventory["stick"])))
+        cost["rail"] = 1 + cost["bench"]*(1 - inventory["bench"]) + cost["ingot"]*(6 - inventory["ingot"])
+
+
+        tools = ["wooden_axe", "wooden_pickaxe", "stone_axe", "stone_pickaxe", "bench", "furnace"]
 
         for key in inventory:
             if key in goal:
@@ -187,7 +204,10 @@ def make_heuristic(goal):
                     if inventory[key] > 1:
                         hue_val = float('inf')
                 elif inventory[key] > 8:
-                    hue_val = float('inf')
+                    if key == "rail":
+                        hue_val += 0
+                    else:
+                        hue_val = float('inf')
             elif key in tools:
                 if inventory[key] > 1:
                     hue_val = float('inf')
@@ -202,11 +222,11 @@ def search(state, is_goal, limit, get_hue, all_recipes):
     temp_state = state.copy()
 
     prio_q = []
-    visited = set()
+    # visited = set()
     distance = {}
     prev = {}
 
-    initial = (get_hue(temp_state), temp_state)
+    initial = (get_hue(temp_state), temp_state, "Start", 0)
     distance[initial] = 0
     heappush(prio_q, initial)
 
@@ -216,32 +236,30 @@ def search(state, is_goal, limit, get_hue, all_recipes):
             node = heappop(prio_q)
 
             if is_goal(node[1]):
-                print("Path found!")
+                print("Path found in "+str(time() - start_time)+" seconds!")
                 path = []
                 while node[1] in prev:
-                    path.append(node[1])
+                    path.append([node[3], node[2], node[1]])
                     node = prev[node[1]]
-                path.append(node[1])
+                path.append([node[3], node[2], node[1]])
                 path.reverse()
                 return path
             neighbors = graph(node[1], all_recipes)
             # n[0] - name
             # n[1] - state
             # n[2] - cost
+            print(node)
             for n in neighbors:
-                temp_distance = node[0] - get_hue(node[1]) + n[2]
-
-                if n[1] not in distance or temp_distance < distance[n[1]]:
-                    distance[n[1]] = temp_distance
+                distance_through_node = node[0] - get_hue(node[1]) + n[2]
+                if n[1] not in distance or distance_through_node < distance[n[1]]:
+                    distance[n[1]] = distance_through_node
                     prev[n[1]] = node
-                    new_node = (get_hue(n[1]) + distance[n[1]], n[1])
+                    new_node = (get_hue(n[1]) + distance[n[1]], n[1], n[0], n[2])
                     heappush(prio_q, new_node)
-            # print(node[0], n[0], node[1])
-            visited.add(node)
 
     # Failed to find a path
     print("Failed to find a path from", state, 'within time limit.')
-    return None
+    return []
 
 if __name__ == '__main__':
     with open('Crafting.json') as f:
@@ -271,12 +289,22 @@ if __name__ == '__main__':
 
     # Create a function which checks for the goal
     goal = Crafting['Goal']
+    # goal = {"cart": 1}
+    # goal = {"iron_axe": 1}
     is_goal = make_goal_checker(goal)
     get_hue = make_heuristic(goal)
-
     # Initialize first state from initial inventory
     state = State({key: 0 for key in Crafting['Items']})
     state.update(Crafting['Initial'])
-
     # Search - This is you!
-    search(state, is_goal, 30, get_hue, all_recipes)
+    path = search(state, is_goal, 30, get_hue, all_recipes)
+    total_cost = 0
+    for action in path:
+        total_cost += action[0]
+        inventory = {}
+        for i_name, i_amount in action[2].items():
+            if i_amount > 0:
+                inventory[i_name] = i_amount
+        print(str(action[0])+', '+action[1]+', '+str(inventory))
+    totals = {"total_cost": total_cost, "length": len(path)-1}
+    print("\n"+str(totals))

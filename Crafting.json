@@ -1,7 +1,8 @@
 {
  "Initial": {},
  "Goal": {
-   "furnace": 1
+   "stone_axe": 1,
+   "stone_pickaxe": 8
  },
  "Items": [
    "bench",
